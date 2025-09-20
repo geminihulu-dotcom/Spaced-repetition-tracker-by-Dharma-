@@ -63,6 +63,11 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = ({
     setIsReviewing(false);
   };
   
+  const renderedNotes = useMemo(() => {
+      if (!item.notes) return null;
+      return parseNotes(item.notes, isValidTopicTitle, onNoteLinkClick);
+  }, [item.notes, isValidTopicTitle, onNoteLinkClick]);
+
   const cardContent = () => {
     // Archived Card View
     if (item.archivedAt) {
@@ -122,11 +127,6 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = ({
     const handleSaveTitle = () => { onUpdateItem?.(item.id, { title: newTitle.trim() }); setIsEditingTitle(false); };
     const handleSaveNotes = () => { onUpdateItem?.(item.id, { notes: newNotes.trim() }); setIsEditingNotes(false); };
     
-    const renderedNotes = useMemo(() => {
-        if (!item.notes) return null;
-        return parseNotes(item.notes, isValidTopicTitle, onNoteLinkClick);
-    }, [item.notes, isValidTopicTitle, onNoteLinkClick]);
-
     return (
       <div className={`${cardBaseClasses} bg-slate-800/70 border-slate-700 border-l-4 ${selectionMode ? 'border-indigo-500' : colorClasses} flex-grow`}>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">

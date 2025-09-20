@@ -19,7 +19,7 @@ const AchievementToast: React.FC<AchievementToastProps> = ({ achievement }) => {
         }
     }, [achievement]);
     
-    const Icon = achievement.icon;
+    const Icon = achievement.icon || AwardIcon;
 
     return (
         <div 
@@ -29,7 +29,7 @@ const AchievementToast: React.FC<AchievementToastProps> = ({ achievement }) => {
            {achievement && (
                 <div className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-slate-700 border border-amber-500/50">
                     <div className="flex-shrink-0">
-                        <AwardIcon className="w-10 h-10 text-amber-400"/>
+                        <Icon className="w-10 h-10 text-amber-400"/>
                     </div>
                     <div>
                         <p className="font-bold text-slate-100">Achievement Unlocked!</p>

@@ -1,8 +1,7 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { RevisionItem } from '../types';
-import { getDaysUntil, formatDate } from '../utils/date';
-import { XMarkIcon, CheckCircleIcon, DocumentTextIcon } from './Icons';
+import { XMarkIcon, CheckCircleIcon } from './Icons';
 
 interface SessionModalProps {
     mode: 'review' | 'cram';

@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { RevisionItem, RevisionHistory, Settings, Achievement } from './types';
 import { REVISION_INTERVALS } from './hooks/constants';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { addDays, getStartOfWeek } from './utils/date';
+import { addDays } from './utils/date';
 import { ACHIEVEMENTS, getAchievementById } from './hooks/achievementsData';
 import Header from './components/Header';
 import AddItemForm from './components/AddItemForm';
@@ -69,14 +69,14 @@ const App: React.FC = () => {
     if (itemsToKeep.length < items.length) {
       setItems(itemsToKeep);
     }
-  }, []); // Runs once on app load
+  }, [items, setItems]); // Runs once on app load
   
   const handleSetNewlyUnlockedAchievement = (achievement: Achievement) => {
     setNewlyUnlockedAchievement(achievement);
     setTimeout(() => setNewlyUnlockedAchievement(null), 5000); // Toast disappears after 5s
   };
 
-  const checkAchievements = useCallback((updatedItems: RevisionItem[], lastAction: 'review' | 'master') => {
+  const checkAchievements = useCallback((updatedItems: RevisionItem[]) => {
       const stats = {
           mastered: updatedItems.filter(i => !!i.completedAt).length,
           reviews: updatedItems.reduce((sum, item) => sum + (item.history?.length || 0), 0),
@@ -156,7 +156,7 @@ const App: React.FC = () => {
     };
     setItems(prevItems => {
         const newItems = [...prevItems, newItem];
-        checkAchievements(newItems, 'master'); // Check achievements on add
+        checkAchievements(newItems); // Check achievements on add
         return newItems;
     });
   }, [setItems, checkAchievements]);
@@ -190,7 +190,7 @@ const App: React.FC = () => {
     
     setItems(prevItems => {
         const updatedItems = [...prevItems, ...newItems];
-        checkAchievements(updatedItems, 'master');
+        checkAchievements(updatedItems);
         return updatedItems;
     });
   }, [setItems, checkAchievements]);
@@ -209,9 +209,8 @@ const App: React.FC = () => {
       return false;
   }, []);
 
-  const handleCompleteRevision = useCallback((id: string, confidence: 'hard' | 'good' | 'easy' = 'good') => {
+  const handleCompleteRevision = useCallback((id:string, confidence:'hard' | 'good' | 'easy' = 'good') => {
     let wasMastered = false;
-    let itemsAfterRevision: RevisionItem[] = [];
 
     setItems(currentItems => {
         const updatedItems = currentItems.map(item => {
@@ -261,8 +260,7 @@ const App: React.FC = () => {
             return item;
           });
         
-        itemsAfterRevision = updatedItems;
-        checkAchievements(updatedItems, wasMastered ? 'master' : 'review');
+        checkAchievements(updatedItems);
         
         // Check if this completion unlocked other items
         if (wasMastered) {
@@ -290,7 +288,7 @@ const App: React.FC = () => {
         }
         return updatedItems;
     });
-  }, [items, setItems, checkAchievements, isLocked]);
+  }, [setItems, checkAchievements, isLocked]);
 
   const handleArchiveItem = useCallback((id: string) => {
     setItems(prevItems =>
@@ -304,7 +302,7 @@ const App: React.FC = () => {
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === id) {
-          const { archivedAt, ...rest } = item;
+          const { ...rest } = item;
           // When restoring, reset next revision date based on last revision
           const lastRevisionDate = new Date(rest.lastRevisionDate);
           const schedule = rest.revisionIntervals || REVISION_INTERVALS;

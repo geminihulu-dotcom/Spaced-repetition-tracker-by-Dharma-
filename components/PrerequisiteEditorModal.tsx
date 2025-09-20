@@ -59,7 +59,7 @@ const PrerequisiteEditorModal: React.FC<PrerequisiteEditorModalProps> = ({ item,
                     </button>
                 </div>
                 <div className="p-6 space-y-4 overflow-y-auto">
-                    <p className="text-slate-400">Set topics that must be mastered before <strong className="text-slate-200">"{item.title}"</strong> can be reviewed.</p>
+                    <p className="text-slate-400">Set topics that must be mastered before <strong className="text-slate-200">&quot;{item.title}&quot;</strong> can be reviewed.</p>
                     
                     {/* Current Prerequisites */}
                     <div>

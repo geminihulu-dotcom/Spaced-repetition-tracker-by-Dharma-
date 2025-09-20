@@ -1,10 +1,10 @@
 
 import React, { useMemo, useState } from 'react';
-import { RevisionItem, Achievement } from '../types';
+import { RevisionItem } from '../types';
 import { Goal } from '../App';
-import { XMarkIcon, FireIcon, TrophyIcon, CheckCircleIcon, QueueListIcon, BadgeCheckIcon, TrendingDownIcon, AwardIcon, ChevronLeftIcon, ChevronRightIcon, PlayCircleIcon } from './Icons';
+import { XMarkIcon, FireIcon, CheckCircleIcon, QueueListIcon, BadgeCheckIcon, TrendingDownIcon, ChevronLeftIcon, ChevronRightIcon, PlayCircleIcon } from './Icons';
 import { getStartOfWeek, addDays, formatDate } from '../utils/date';
-import { getAchievementById, ACHIEVEMENTS } from '../hooks/achievementsData';
+import { ACHIEVEMENTS } from '../hooks/achievementsData';
 
 interface DashboardModalProps {
     items: RevisionItem[];

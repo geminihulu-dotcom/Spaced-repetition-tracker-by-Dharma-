@@ -56,7 +56,7 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = (props) => {
   const { 
   item, allItems, onComplete, onUpdateItem, onArchive, onRestore, onDeletePermanently,
   selectionMode, isSelected, onToggleSelectItem, onNoteLinkClick = () => {}, isValidTopicTitle = () => false,
-  isLocked, onAddSubtopic, onEditPrereqs, childCount, isExpanded, onToggleExpand, indentationLevel
+  isLocked, onAddSubtopic, onEditPrereqs, childCount, isExpanded, onToggleExpand
 } = props;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(item.title);
@@ -74,6 +74,17 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = (props) => {
     onComplete?.(item.id, confidence);
     setIsReviewing(false);
   };
+
+    const renderedNotes = useMemo(() => {
+        if (!item.notes) return null;
+        return parseNotes(item.notes, isValidTopicTitle, onNoteLinkClick);
+    }, [item.notes, isValidTopicTitle, onNoteLinkClick]);
+
+    const prerequisites = useMemo(() => {
+        return (item.prerequisiteIds || [])
+            .map(id => allItems.find(i => i.id === id))
+            .filter((i): i is RevisionItem => !!i);
+    }, [item.prerequisiteIds, allItems]);
    
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -145,18 +156,6 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = (props) => {
     const handleSaveTitle = () => { onUpdateItem?.(item.id, { title: newTitle.trim() }); setIsEditingTitle(false); };
     const handleSaveNotes = () => { onUpdateItem?.(item.id, { notes: newNotes.trim() }); setIsEditingNotes(false); };
     
-    const renderedNotes = useMemo(() => {
-        if (!item.notes) return null;
-        return parseNotes(item.notes, isValidTopicTitle, onNoteLinkClick);
-    }, [item.notes, isValidTopicTitle, onNoteLinkClick]);
-    
-    const prerequisites = useMemo(() => {
-        return (item.prerequisiteIds || [])
-            .map(id => allItems.find(i => i.id === id))
-            .filter((i): i is RevisionItem => !!i);
-    }, [item.prerequisiteIds, allItems]);
-
-
     return (
       <div className={`${cardBaseClasses} border-slate-700 border-l-4 ${selectionMode ? 'border-indigo-500' : colorClasses} flex-grow ${isLocked ? 'opacity-70' : ''}`}>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full">

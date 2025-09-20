@@ -66,7 +66,7 @@ const SuggestTopicsModal: React.FC<SuggestTopicsModalProps> = ({ onClose, onAddT
                 <div className="p-6 space-y-4 overflow-y-auto">
                     <div>
                         <label htmlFor="subject" className="block text-sm font-medium text-slate-300 mb-2">
-                            Enter a broad subject (e.g., "React Hooks", "Italian Renaissance Art")
+                            Enter a broad subject (e.g., &quot;React Hooks&quot;, &quot;Italian Renaissance Art&quot;)
                         </label>
                         <div className="flex gap-2">
                             <input

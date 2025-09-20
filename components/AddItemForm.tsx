@@ -4,12 +4,11 @@ import { REVISION_INTERVALS } from '../hooks/constants';
 
 interface AddItemFormProps {
   onAddItem: (title: string, intervals: number[], tags: string[]) => void;
-  onAddMultipleItems: (titles: string[], intervals: number[], tags: string[]) => void;
   topicToPromote?: string | null;
   onPromotionHandled?: () => void;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem, onAddMultipleItems, topicToPromote, onPromotionHandled }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem, topicToPromote, onPromotionHandled }) => {
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
   const [intervals, setIntervals] = useState(REVISION_INTERVALS.join(', '));

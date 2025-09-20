@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { RevisionItem } from '../types';
 import RevisionItemCard from './RevisionItemCard';
-import { BellIcon, CheckCircleIcon, CalendarClockIcon, CalendarDaysIcon, TrashIcon, TagIcon, PlayCircleIcon, QueueListIcon, FireIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, Cog8ToothIcon, SitemapIcon, EyeIcon } from './Icons';
+import { BellIcon, CheckCircleIcon, CalendarClockIcon, CalendarDaysIcon, TagIcon, PlayCircleIcon, QueueListIcon, FireIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, Cog8ToothIcon, SitemapIcon, EyeIcon } from './Icons';
 import { getDaysUntil } from '../utils/date';
 
 type Confidence = 'hard' | 'good' | 'easy';
@@ -142,6 +142,7 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
   
   // FIX: Create a props object for RevisionItemCard that doesn't include the `isLocked` function,
   // to prevent type conflicts when spreading.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isLocked: _, ...cardProps } = props;
 
   const [activeView, setActiveView] = useState<View>('topics');

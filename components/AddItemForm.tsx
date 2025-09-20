@@ -71,8 +71,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAddItem, onAddMultipleItems
             </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-4">
-            <div className="flex-grow"></div>
+        <div className="flex items-center justify-end gap-2 mt-4">
             <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}

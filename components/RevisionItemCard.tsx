@@ -100,8 +100,9 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = (props) => {
                     </p>
                 </div>
                 <div className="flex items-center gap-2 self-end md:self-center">
-                    <button onClick={() => onRestore?.(item.id)} className="flex items-center gap-2 text-slate-300 font-semibold py-2 px-4 rounded-md hover:bg-slate-700 hover:text-sky-400 transition-colors">
-                        <ArrowUturnLeftIcon className="w-5 h-5" /><span>Restore</span>
+                    <button onClick={() => onRestore?.(item.id)} className="flex items-center justify-center gap-2 text-slate-300 font-semibold p-2 sm:py-2 sm:px-4 rounded-md hover:bg-slate-700 hover:text-sky-400 transition-colors">
+                        <ArrowUturnLeftIcon className="w-5 h-5" />
+                        <span className="hidden sm:inline">Restore</span>
                     </button>
                     <button onClick={() => onDeletePermanently?.(item.id)} className="p-2 text-slate-400 rounded-full hover:bg-slate-700 hover:text-red-400 transition-colors">
                         <TrashIcon className="w-5 h-5" />
@@ -193,13 +194,16 @@ const RevisionItemCard: React.FC<RevisionItemCardProps> = (props) => {
           <div className="flex items-center gap-1 self-end md:self-center">
             {isReviewing ? (
                 <div className="flex items-center gap-1 bg-slate-700/50 p-1 rounded-md">
-                    <button onClick={() => handleReview('hard')} className="font-semibold py-1.5 px-3 rounded-md bg-red-800/80 hover:bg-red-700 text-white transition-colors text-sm">Hard</button>
-                    <button onClick={() => handleReview('good')} className="font-semibold py-1.5 px-3 rounded-md bg-sky-600/80 hover:bg-sky-500 text-white transition-colors text-sm">Good</button>
-                    <button onClick={() => handleReview('easy')} className="font-semibold py-1.5 px-3 rounded-md bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors text-sm">Easy</button>
+                    <button onClick={() => handleReview('hard')} className="font-semibold py-1.5 px-2 sm:px-3 rounded-md bg-red-800/80 hover:bg-red-700 text-white transition-colors text-sm">Hard</button>
+                    <button onClick={() => handleReview('good')} className="font-semibold py-1.5 px-2 sm:px-3 rounded-md bg-sky-600/80 hover:bg-sky-500 text-white transition-colors text-sm">Good</button>
+                    <button onClick={() => handleReview('easy')} className="font-semibold py-1.5 px-2 sm:px-3 rounded-md bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors text-sm">Easy</button>
                     <button onClick={() => setIsReviewing(false)} className="p-1.5 text-slate-400 rounded-full hover:bg-slate-600" aria-label="Cancel review"><XMarkIcon className="w-4 h-4" /></button>
                 </div>
               ) : (
-                <button onClick={() => setIsReviewing(true)} disabled={isLocked} className="flex items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-500 transition-colors disabled:bg-slate-700 disabled:cursor-not-allowed"><CheckIcon className="w-5 h-5" /><span>Review</span></button>
+                <button onClick={() => setIsReviewing(true)} disabled={isLocked} className="flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold p-2 sm:py-2 sm:px-4 rounded-md hover:bg-indigo-500 transition-colors disabled:bg-slate-700 disabled:cursor-not-allowed">
+                    <CheckIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Review</span>
+                </button>
               )}
                <div className="relative" ref={menuRef}>
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-slate-400 rounded-full hover:bg-slate-700 hover:text-indigo-400 transition-colors" aria-label="More options"><EllipsisVerticalIcon className="w-5 h-5" /></button>

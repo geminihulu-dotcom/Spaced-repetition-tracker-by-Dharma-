@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenDashboard }) => {
         <div className="flex items-center gap-3">
             <BrainCircuitIcon className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400" />
             <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-slate-100">
-              Spaced Revision
+              Spaced Revision Tracker By DharMa
             </h1>
         </div>
         <p className="mt-2 text-base sm:text-lg text-slate-400">

@@ -3,8 +3,26 @@ const CACHE_NAME = 'spaced-revision-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/assets/index-D-CZ4tbJ.js',
-  '/assets/manifest-87tiXbPv.json',
+  '/index.tsx',
+  '/App.tsx',
+  '/types.ts',
+  '/hooks/constants.ts',
+  '/hooks/useLocalStorage.ts',
+  '/hooks/achievementsData.ts',
+  '/utils/date.ts',
+  '/components/Header.tsx',
+  '/components/AddItemForm.tsx',
+  '/components/RevisionList.tsx',
+  '/components/RevisionItemCard.tsx',
+  '/components/Icons.tsx',
+  '/components/DashboardModal.tsx',
+  '/components/SessionModal.tsx',
+  '/components/SessionConfigModal.tsx',
+  '/components/AchievementToast.tsx',
+  '/components/Inbox.tsx',
+  '/components/PrerequisiteEditorModal.tsx',
+  '/components/BulkEditModal.tsx',
+  // External assets
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];

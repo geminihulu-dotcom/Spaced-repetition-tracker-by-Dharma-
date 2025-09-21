@@ -21,6 +21,7 @@ const urlsToCache = [
   '/components/AchievementToast.tsx',
   '/components/Inbox.tsx',
   '/components/PrerequisiteEditorModal.tsx',
+  '/components/BulkEditModal.tsx',
   // External assets
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'

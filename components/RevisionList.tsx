@@ -1,9 +1,9 @@
 
 
 import React, { useMemo, useState } from 'react';
-import { RevisionItem } from '../types';
+import { RevisionItem, Filters } from '../types';
 import RevisionItemCard from './RevisionItemCard';
-import { BellIcon, CheckCircleIcon, CalendarClockIcon, CalendarDaysIcon, TrashIcon, TagIcon, PlayCircleIcon, QueueListIcon, FireIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, Cog8ToothIcon, SitemapIcon, EyeIcon } from './Icons';
+import { BellIcon, CheckCircleIcon, CalendarClockIcon, CalendarDaysIcon, TrashIcon, TagIcon, PlayCircleIcon, QueueListIcon, FireIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, Cog8ToothIcon, SitemapIcon, EyeIcon, FilterIcon, PencilSquareIcon } from './Icons';
 import { getDaysUntil } from '../utils/date';
 
 type Confidence = 'hard' | 'good' | 'easy';
@@ -24,12 +24,15 @@ interface RevisionListProps {
   onSelectTag: (tag: string | null) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  filters: Filters;
+  onSetFilters: (filters: Filters) => void;
   selectionMode: boolean;
   onToggleSelectionMode: () => void;
   selectedItems: Record<string, boolean>;
   onToggleSelectItem: (id: string) => void;
   onBulkArchive: () => void;
   onBulkDelete: () => void;
+  onBulkEdit: () => void;
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onStartReviewSession: () => void;
@@ -93,7 +96,7 @@ const TagFilter: React.FC<{
 };
 
 // FIX: Properly type ListSectionProps to ensure props are passed down correctly.
-type ListSectionProps = Omit<RevisionListProps, 'items'> & {
+type ListSectionProps = Omit<RevisionListProps, 'items' | 'filters' | 'onSetFilters' > & {
     title: string;
     items: RevisionItem[];
     icon: React.ReactNode;
@@ -103,7 +106,6 @@ const ListSection: React.FC<ListSectionProps> = ({ title, items, icon, ...props 
   if (items.length === 0) {
     return null;
   }
-  // Destructure isLocked out of props to avoid conflict when spreading on RevisionItemCard.
   const { isLocked, ...cardProps } = props;
   return (
     <section className="mb-8">
@@ -113,7 +115,6 @@ const ListSection: React.FC<ListSectionProps> = ({ title, items, icon, ...props 
       </h2>
       <div className="space-y-4">
         {items.map(item => (
-          // Fix: provide default props for tree view when in a flat list
           <RevisionItemCard 
             key={item.id} 
             item={item} 
@@ -130,18 +131,16 @@ const ListSection: React.FC<ListSectionProps> = ({ title, items, icon, ...props 
   );
 };
 
-
 const RevisionList: React.FC<RevisionListProps> = (props) => {
   const { 
     items, allItems, archivedItems, completedItems,
     uniqueTags, activeTag, onSelectTag, searchQuery, onSearchChange,
+    filters, onSetFilters,
     selectionMode, onToggleSelectionMode, selectedItems,
-    onBulkArchive, onBulkDelete, onExport, onImport,
+    onBulkArchive, onBulkDelete, onBulkEdit, onExport, onImport,
     onStartReviewSession, onStartCramSession, isLocked
   } = props;
   
-  // FIX: Create a props object for RevisionItemCard that doesn't include the `isLocked` function,
-  // to prevent type conflicts when spreading.
   const { isLocked: _, ...cardProps } = props;
 
   const [activeView, setActiveView] = useState<View>('topics');
@@ -149,6 +148,7 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+  const [showFilters, setShowFilters] = useState(false);
 
   const { overdue, dueToday, upcoming } = useMemo(() => {
     const unlockedItems = items.filter(item => !isLocked(item, allItems));
@@ -177,14 +177,12 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
             rootTopics.push(item);
         }
     }
-    // Sort root topics by creation date
     rootTopics.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    // Sort children by creation date
     childrenMap.forEach(children => children.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
 
     return { rootTopics, childrenMap };
   }, [items]);
-
+  
   const toggleExpand = (topicId: string) => {
     setExpandedTopics(prev => ({ ...prev, [topicId]: !prev[topicId] }));
   };
@@ -192,7 +190,7 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
   const renderTopicTree = (topics: RevisionItem[], level: number = 0) => {
       return topics.map(item => {
           const children = childrenMap.get(item.id) || [];
-          const isExpanded = expandedTopics[item.id] !== false; // Default to expanded
+          const isExpanded = expandedTopics[item.id] !== false;
           return (
               <div key={item.id}>
                   <RevisionItemCard
@@ -216,8 +214,9 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
   
   const numSelected = Object.values(selectedItems).filter(Boolean).length;
   const dueItemsCount = overdue.length + dueToday.length;
+  const isFilterActive = Object.keys(filters).length > 0;
   
-  if (items.length === 0 && archivedItems.length === 0 && completedItems.length === 0 && !activeTag && !searchQuery) {
+  if (items.length === 0 && archivedItems.length === 0 && completedItems.length === 0 && !activeTag && !searchQuery && !isFilterActive) {
     return (
       <div className="text-center py-16 px-6 bg-slate-800/50 border border-slate-700 rounded-lg shadow-inner">
         <BellIcon className="w-12 h-12 mx-auto text-slate-500 mb-4" />
@@ -226,18 +225,61 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
       </div>
     );
   }
-
+  
   return (
     <>
       <div className="space-y-4 my-8">
         <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-            <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search by title or in notes..."
-                className="w-full bg-slate-900/80 border border-slate-600 rounded-md py-2 px-4 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
-            />
+            <div className="flex gap-2">
+                 <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder="Search by title or in notes..."
+                    className="flex-grow bg-slate-900/80 border border-slate-600 rounded-md py-2 px-4 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
+                />
+                 <button onClick={() => setShowFilters(!showFilters)} className={`relative flex items-center gap-2 font-semibold py-2 px-4 rounded-md transition-colors ${showFilters || isFilterActive ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
+                    <FilterIcon className="w-5 h-5"/>
+                    <span>Filter</span>
+                    {isFilterActive && <span className="absolute -top-1 -right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-800"></span>}
+                </button>
+            </div>
+             {showFilters && (
+                <div className="mt-4 p-4 bg-slate-900/50 rounded-md border border-slate-700 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                       <div>
+                            <label className="block text-sm font-medium text-slate-400 mb-1">Status</label>
+                            <select value={filters.status || 'any'} onChange={e => onSetFilters({...filters, status: e.target.value as any})} className="w-full bg-slate-800 border border-slate-600 rounded-md py-2 px-2 text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="any">Any</option>
+                                <option value="unlocked">Unlocked</option>
+                                <option value="locked">Locked</option>
+                            </select>
+                       </div>
+                       <div>
+                            <label className="block text-sm font-medium text-slate-400 mb-1">Level</label>
+                            <div className="flex gap-1">
+                                <select value={filters.level?.comparison || 'gt'} onChange={e => onSetFilters({...filters, level: {...(filters.level || {value: 0}), comparison: e.target.value as any}})} className="bg-slate-800 border border-slate-600 rounded-l-md py-2 px-2 text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="gt">&gt;</option>
+                                    <option value="lt">&lt;</option>
+                                    <option value="eq">=</option>
+                                </select>
+                                <input type="number" value={filters.level?.value || ''} onChange={e => onSetFilters({...filters, level: {...(filters.level || {comparison: 'gt'}), value: parseInt(e.target.value) || 0}})} className="w-full bg-slate-800 border-y border-r border-slate-600 rounded-r-md py-2 px-2 text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. 5" />
+                            </div>
+                       </div>
+                       <div>
+                           <label className="block text-sm font-medium text-slate-400 mb-1">Created After</label>
+                           <input type="date" value={filters.createdAfter || ''} onChange={e => onSetFilters({...filters, createdAfter: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded-md py-2 px-2 text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                       </div>
+                        <div>
+                           <label className="block text-sm font-medium text-slate-400 mb-1">Created Before</label>
+                           <input type="date" value={filters.createdBefore || ''} onChange={e => onSetFilters({...filters, createdBefore: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded-md py-2 px-2 text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                       </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <button onClick={() => { onSetFilters({}); onSearchChange(''); onSelectTag(null); }} className="font-semibold text-sm py-2 px-4 rounded-md text-slate-300 hover:bg-slate-700 transition-colors">Clear All Filters</button>
+                    </div>
+                </div>
+            )}
         </div>
         <TagFilter tags={uniqueTags} activeTag={activeTag} onSelectTag={onSelectTag} onStartCramSession={onStartCramSession}/>
 
@@ -267,13 +309,14 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
           <div className="sticky bottom-4 z-10 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-lg flex items-center justify-between">
               <span className="font-semibold">{numSelected} item(s) selected</span>
               <div className="flex items-center gap-2">
+                  <button onClick={onBulkEdit} className="flex items-center gap-2 font-semibold py-2 px-4 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"><PencilSquareIcon className="w-5 h-5"/> Bulk Edit</button>
                   <button onClick={onBulkArchive} className="font-semibold py-2 px-4 rounded-md bg-slate-600 hover:bg-slate-500 transition-colors">Archive</button>
                   <button onClick={onBulkDelete} className="font-semibold py-2 px-4 rounded-md bg-red-800 hover:bg-red-700 text-white transition-colors">Delete</button>
               </div>
           </div>
       )}
 
-      {items.length === 0 && (activeTag || searchQuery) && (
+      {items.length === 0 && (activeTag || searchQuery || isFilterActive) && (
         <div className="text-center py-12 px-6 bg-slate-800/50 border border-slate-700 rounded-lg shadow-inner">
             <h3 className="text-lg font-semibold text-slate-300">No items match your filter/search.</h3>
             <p className="text-slate-400 mt-1">Clear the filter or search to see all active items.</p>
@@ -294,7 +337,6 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
         </>
       )}
 
-
       {(archivedItems.length > 0 || completedItems.length > 0 || true) && (
         <div className="mt-12 border-t border-slate-700 pt-8 space-y-6">
             {completedItems.length > 0 && (
@@ -305,7 +347,6 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
                     {showCompleted && (
                         <section className="mt-4 space-y-4">
                             {[...completedItems].sort((a,b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime()).map(item => (
-                                // Fix: Provide default props for tree view for completed items list.
                                 <RevisionItemCard 
                                     key={item.id} 
                                     item={item} 
@@ -330,7 +371,6 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
                     {showArchived && (
                         <section className="mt-4 space-y-4">
                             {[...archivedItems].sort((a,b) => new Date(b.archivedAt!).getTime() - new Date(a.archivedAt!).getTime()).map(item => (
-                                // Fix: Provide default props for tree view for archived items list.
                                 <RevisionItemCard 
                                     key={item.id} 
                                     item={item} 

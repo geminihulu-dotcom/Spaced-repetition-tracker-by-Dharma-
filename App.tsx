@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { RevisionItem, RevisionHistory, Settings, Achievement } from './types';
+import { RevisionItem, RevisionHistory, Settings, Achievement, Filters } from './types';
 import { REVISION_INTERVALS } from './hooks/constants';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { addDays, getStartOfWeek } from './utils/date';
@@ -14,6 +13,7 @@ import SessionConfigModal from './components/SessionConfigModal';
 import AchievementToast from './components/AchievementToast';
 import Inbox from './components/Inbox';
 import PrerequisiteEditorModal from './components/PrerequisiteEditorModal';
+import BulkEditModal from './components/BulkEditModal';
 
 
 const AUTO_DELETE_DAYS = 7;
@@ -39,10 +39,12 @@ const App: React.FC = () => {
   // Search and Filter State
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Filters>({});
 
   // Bulk Edit State
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   
   // Goal State
   const [goal, setGoal] = useLocalStorage<Goal>('learningGoal', null);
@@ -386,6 +388,26 @@ const App: React.FC = () => {
     setItems(prev => prev.filter(item => !idsToDelete.includes(item.id)));
     clearSelection();
   }, [selectedItems, setItems]);
+  
+  const handleBulkUpdateTags = useCallback((updates: { tagsToAdd: string[], tagsToRemove: string[] }) => {
+    const idsToUpdate = Object.keys(selectedItems).filter(id => selectedItems[id]);
+    if (idsToUpdate.length === 0) return;
+
+    setItems(prevItems =>
+      prevItems.map(item => {
+        if (idsToUpdate.includes(item.id)) {
+          const currentTags = new Set(item.tags || []);
+          updates.tagsToRemove.forEach(tag => currentTags.delete(tag));
+          updates.tagsToAdd.forEach(tag => currentTags.add(tag));
+          return { ...item, tags: Array.from(currentTags) };
+        }
+        return item;
+      })
+    );
+    
+    clearSelection();
+    setIsBulkEditOpen(false);
+  }, [selectedItems, setItems]);
 
   const { activeItems, archivedItems, completedItems } = useMemo(() => {
     return items.reduce<{ activeItems: RevisionItem[]; archivedItems: RevisionItem[]; completedItems: RevisionItem[]; }>(
@@ -434,6 +456,7 @@ const App: React.FC = () => {
   const handleNoteLinkClick = useCallback((title: string) => {
     setSearchQuery(`"${title}"`);
     setActiveTag(null);
+    setFilters({});
   }, []);
 
   const isValidTopicTitle = useCallback((title: string) => {
@@ -453,10 +476,34 @@ const App: React.FC = () => {
   const filteredActiveItems = useMemo(() => {
     let filtered = activeItems;
 
+    // Powerful filters
+    if (filters.status && filters.status !== 'any') {
+      if (filters.status === 'locked') filtered = filtered.filter(item => isLocked(item, items));
+      if (filters.status === 'unlocked') filtered = filtered.filter(item => !isLocked(item, items));
+    }
+    if (filters.level) {
+      const { comparison, value } = filters.level;
+      if (comparison === 'eq') filtered = filtered.filter(item => item.level === value);
+      if (comparison === 'gt') filtered = filtered.filter(item => item.level > value);
+      if (comparison === 'lt') filtered = filtered.filter(item => item.level < value);
+    }
+    if (filters.createdAfter) {
+      const afterDate = new Date(filters.createdAfter);
+      afterDate.setHours(0,0,0,0);
+      filtered = filtered.filter(item => new Date(item.createdAt) >= afterDate);
+    }
+    if (filters.createdBefore) {
+      const beforeDate = new Date(filters.createdBefore);
+      beforeDate.setHours(23,59,59,999);
+      filtered = filtered.filter(item => new Date(item.createdAt) <= beforeDate);
+    }
+
+    // Tag filter
     if (activeTag) {
       filtered = filtered.filter(item => item.tags?.includes(activeTag));
     }
-
+    
+    // Search query
     if (searchQuery.trim()) {
       const lowercasedQuery = searchQuery.toLowerCase().trim();
       // Handle exact match for linked notes
@@ -472,7 +519,7 @@ const App: React.FC = () => {
     }
 
     return filtered;
-  }, [activeItems, activeTag, searchQuery]);
+  }, [activeItems, activeTag, searchQuery, filters, isLocked, items]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200">
@@ -534,6 +581,13 @@ const App: React.FC = () => {
                 }}
             />
           )}
+          {isBulkEditOpen && (
+              <BulkEditModal
+                  onClose={() => setIsBulkEditOpen(false)}
+                  onSave={handleBulkUpdateTags}
+                  itemCount={Object.values(selectedItems).filter(Boolean).length}
+              />
+          )}
           
           <RevisionList 
             items={filteredActiveItems}
@@ -550,6 +604,8 @@ const App: React.FC = () => {
             onSelectTag={setActiveTag}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            filters={filters}
+            onSetFilters={setFilters}
             selectionMode={selectionMode}
             onToggleSelectionMode={() => {
               setSelectionMode(!selectionMode);
@@ -559,6 +615,7 @@ const App: React.FC = () => {
             onToggleSelectItem={handleToggleSelection}
             onBulkArchive={handleBulkArchive}
             onBulkDelete={handleBulkDelete}
+            onBulkEdit={() => setIsBulkEditOpen(true)}
             onExport={handleExportData}
             onImport={handleImportData}
             onStartReviewSession={() => setIsSessionConfigOpen(true)}

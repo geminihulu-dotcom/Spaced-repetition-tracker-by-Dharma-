@@ -1,8 +1,9 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { RevisionItem, Achievement } from '../types';
 import { Goal } from '../App';
-import { XMarkIcon, FireIcon, TrophyIcon, CheckCircleIcon, QueueListIcon, BadgeCheckIcon, TrendingDownIcon, AwardIcon, ChevronLeftIcon, ChevronRightIcon, PlayCircleIcon } from './Icons';
+import { XMarkIcon, FireIcon, TrophyIcon, CheckCircleIcon, QueueListIcon, BadgeCheckIcon, TrendingDownIcon, AwardIcon, ChevronLeftIcon, ChevronRightIcon, PlayCircleIcon, ChartBarIcon, TagIcon, ChartPieIcon } from './Icons';
 import { getStartOfWeek, addDays, formatDate } from '../utils/date';
 import { getAchievementById, ACHIEVEMENTS } from '../hooks/achievementsData';
 
@@ -183,6 +184,74 @@ const DashboardModal: React.FC<DashboardModalProps> = ({ items, goal, onSetGoal,
         return { current, target: goal.target };
     }, [items, goal]);
 
+    const weeklyReviewData = useMemo(() => {
+        const weeks: Record<string, number> = {};
+        const today = new Date();
+        const numWeeks = 6;
+    
+        // Initialize last 6 weeks
+        for (let i = 0; i < numWeeks; i++) {
+            const weekStart = getStartOfWeek(addDays(today, -i * 7));
+            weeks[weekStart.toISOString().split('T')[0]] = 0;
+        }
+
+        items.forEach(item => {
+            item.history?.forEach(h => {
+                const reviewDate = new Date(h.revisionDate);
+                const weekStart = getStartOfWeek(reviewDate).toISOString().split('T')[0];
+                if (weeks[weekStart] !== undefined) {
+                    weeks[weekStart]++;
+                }
+            });
+        });
+
+        return Object.entries(weeks)
+            .map(([date, count]) => ({ date, count }))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [items]);
+
+    const tagDistributionData = useMemo(() => {
+        const tagCounts: Record<string, number> = {};
+        const activeItems = items.filter(i => !i.archivedAt && !i.completedAt);
+        activeItems.forEach(item => {
+            item.tags?.forEach(tag => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+        });
+
+        const totalTaggedItems = Object.values(tagCounts).reduce((sum, count) => sum + count, 0);
+        if(totalTaggedItems === 0) return [];
+        
+        return Object.entries(tagCounts)
+            .map(([tag, count]) => ({ tag, count, percentage: (count / activeItems.length) * 100 }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 7); // Show top 7 tags
+    }, [items]);
+    
+    const confidenceData = useMemo(() => {
+        const counts = { hard: 0, good: 0, easy: 0 };
+        let total = 0;
+        items.forEach(item => {
+            item.history?.forEach(h => {
+                if (h.confidence) {
+                    counts[h.confidence]++;
+                    total++;
+                } else {
+                    counts.good++; // Default to good if not specified
+                    total++;
+                }
+            });
+        });
+
+        if (total === 0) return { hard: 0, good: 0, easy: 0, total };
+        return {
+            hard: (counts.hard / total) * 100,
+            good: (counts.good / total) * 100,
+            easy: (counts.easy / total) * 100,
+            total,
+        };
+    }, [items]);
+
     const handleSetNewGoal = () => {
         const startOfWeek = getStartOfWeek(new Date()).toISOString().split('T')[0];
         onSetGoal({ type: 'master', target: newGoalTarget, startOfWeek });
@@ -201,9 +270,9 @@ const DashboardModal: React.FC<DashboardModalProps> = ({ items, goal, onSetGoal,
 
     return (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">Progress Dashboard</h2>
+                    <h2 className="text-xl font-semibold flex items-center gap-2">Analytics & Progress</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700" aria-label="Close"><XMarkIcon className="w-6 h-6" /></button>
                 </div>
                 
@@ -215,62 +284,113 @@ const DashboardModal: React.FC<DashboardModalProps> = ({ items, goal, onSetGoal,
 
                 <div className="p-6 space-y-6 overflow-y-auto">
                     {activeTab === 'overview' && (
-                        <>
-                        <section>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <StatCard icon={<FireIcon className="w-6 h-6 text-amber-400"/>} label="Current Streak" value={`${stats.currentStreak} days`} color="border-l-amber-500" />
-                                <StatCard icon={<CheckCircleIcon className="w-6 h-6 text-sky-400"/>} label="Total Reviews" value={stats.totalReviews} color="border-l-sky-500" />
-                                <StatCard icon={<QueueListIcon className="w-6 h-6 text-indigo-400"/>} label="Active Topics" value={stats.activeItems} color="border-l-indigo-500" />
-                                <StatCard icon={<BadgeCheckIcon className="w-6 h-6 text-emerald-400"/>} label="Mastered Topics" value={stats.masteredItems} color="border-l-emerald-500" />
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-lg font-semibold text-slate-300 mb-3">Weekly Goal</h3>
-                            {isGoalOutdated ? (
-                                <div className="p-4 rounded-lg bg-slate-900/50 space-y-3">
-                                    <p className="text-slate-400">Set a goal for this week!</p>
-                                    <div className="flex items-center gap-2">
-                                        <label htmlFor="goal-input" className="text-slate-300">Master</label>
-                                        <input id="goal-input" type="number" min="1" value={newGoalTarget} onChange={(e) => setNewGoalTarget(parseInt(e.target.value, 10))} className="w-20 bg-slate-800 border border-slate-600 rounded-md py-1 px-2 text-center"/>
-                                        <span className="text-slate-300">topics this week.</span>
-                                        <button onClick={handleSetNewGoal} className="bg-indigo-600 text-white font-semibold py-1 px-4 rounded-md hover:bg-indigo-500">Set Goal</button>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-6">
+                                <section>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <StatCard icon={<FireIcon className="w-6 h-6 text-amber-400"/>} label="Current Streak" value={`${stats.currentStreak} days`} color="border-l-amber-500" />
+                                        <StatCard icon={<CheckCircleIcon className="w-6 h-6 text-sky-400"/>} label="Total Reviews" value={stats.totalReviews} color="border-l-sky-500" />
+                                        <StatCard icon={<QueueListIcon className="w-6 h-6 text-indigo-400"/>} label="Active Topics" value={stats.activeItems} color="border-l-indigo-500" />
+                                        <StatCard icon={<BadgeCheckIcon className="w-6 h-6 text-emerald-400"/>} label="Mastered Topics" value={stats.masteredItems} color="border-l-emerald-500" />
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="p-4 rounded-lg bg-slate-900/50">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <p className="text-slate-300">Master {goal.target} topics this week</p>
-                                        <p className="font-semibold text-slate-100">{goalProgress.current} / {goal.target}</p>
+                                </section>
+                                <section>
+                                    <h3 className="text-lg font-semibold text-slate-300 mb-3">Weekly Goal</h3>
+                                    {isGoalOutdated ? (
+                                        <div className="p-4 rounded-lg bg-slate-900/50 space-y-3">
+                                            <p className="text-slate-400">Set a goal for this week!</p>
+                                            <div className="flex items-center gap-2">
+                                                <label htmlFor="goal-input" className="text-slate-300">Master</label>
+                                                <input id="goal-input" type="number" min="1" value={newGoalTarget} onChange={(e) => setNewGoalTarget(parseInt(e.target.value, 10))} className="w-20 bg-slate-800 border border-slate-600 rounded-md py-1 px-2 text-center"/>
+                                                <span className="text-slate-300">topics this week.</span>
+                                                <button onClick={handleSetNewGoal} className="bg-indigo-600 text-white font-semibold py-1 px-4 rounded-md hover:bg-indigo-500">Set Goal</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-lg bg-slate-900/50">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <p className="text-slate-300">Master {goal.target} topics this week</p>
+                                                <p className="font-semibold text-slate-100">{goalProgress.current} / {goal.target}</p>
+                                            </div>
+                                            <div className="w-full bg-slate-700 rounded-full h-4"><div className="bg-emerald-500 h-4 rounded-full transition-all" style={{ width: `${Math.min((goalProgress.current / goal.target) * 100, 100)}%` }}></div></div>
+                                            {goalProgress.current >= goal.target && (<p className="text-center mt-3 font-semibold text-emerald-400 flex items-center justify-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Goal Achieved! Great work!</p>)}
+                                        </div>
+                                    )}
+                                </section>
+                                <section>
+                                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-300 mb-3"><ChartPieIcon className="w-5 h-5"/> Confidence Report</h3>
+                                    <div className="p-4 rounded-lg bg-slate-900/50">
+                                        {confidenceData.total > 0 ? (
+                                            <>
+                                                <div className="flex w-full h-6 rounded-full overflow-hidden mb-2">
+                                                    <div className="bg-red-600" style={{width: `${confidenceData.hard}%`}} title={`Hard: ${confidenceData.hard.toFixed(1)}%`}></div>
+                                                    <div className="bg-sky-600" style={{width: `${confidenceData.good}%`}} title={`Good: ${confidenceData.good.toFixed(1)}%`}></div>
+                                                    <div className="bg-emerald-600" style={{width: `${confidenceData.easy}%`}} title={`Easy: ${confidenceData.easy.toFixed(1)}%`}></div>
+                                                </div>
+                                                <div className="flex justify-around text-xs text-slate-400">
+                                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-600"></span>Hard</span>
+                                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-600"></span>Good</span>
+                                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600"></span>Easy</span>
+                                                </div>
+                                            </>
+                                        ) : <p className="text-slate-500 text-sm">Complete some reviews to see your confidence report.</p>}
                                     </div>
-                                    <div className="w-full bg-slate-700 rounded-full h-4"><div className="bg-emerald-500 h-4 rounded-full transition-all" style={{ width: `${Math.min((goalProgress.current / goal.target) * 100, 100)}%` }}></div></div>
-                                    {goalProgress.current >= goal.target && (<p className="text-center mt-3 font-semibold text-emerald-400 flex items-center justify-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Goal Achieved! Great work!</p>)}
-                                </div>
-                            )}
-                        </section>
-                        <section>
-                            <div className="flex justify-between items-center mb-3">
-                                <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-300"><TrendingDownIcon className="w-5 h-5"/> Problem Topics</h3>
-                                {stats.problemTopics.length > 0 && (
-                                    <button onClick={() => onStartProblemTopicsSession(stats.problemTopics)} className="flex items-center gap-2 text-sm bg-slate-700 text-slate-300 font-semibold py-1 px-3 rounded-md hover:bg-slate-600 transition-colors">
-                                        <PlayCircleIcon className="w-4 h-4"/>
-                                        Review ({stats.problemTopics.length})
-                                    </button>
-                                )}
+                                </section>
                             </div>
-                            <div className="p-4 rounded-lg bg-slate-900/50">
-                                {stats.problemTopics.length > 0 ? (
-                                    <ul className="space-y-2">
-                                        {stats.problemTopics.map(item => (
-                                            <li key={item.id} className="text-sm text-slate-300 flex justify-between">
-                                                <span>{item.title}</span>
-                                                <span className="font-semibold text-red-400">{item.hardReviews} hard review(s)</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : <p className="text-slate-500 text-sm">No topics seem to be giving you trouble. Keep it up!</p>}
+                             <div className="space-y-6">
+                                <section>
+                                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-300 mb-3"><ChartBarIcon className="w-5 h-5"/> Weekly Activity</h3>
+                                    <div className="p-4 rounded-lg bg-slate-900/50">
+                                        <div className="flex justify-between items-end h-32 gap-2">
+                                            {weeklyReviewData.map(({ date, count }) => (
+                                                <div key={date} className="flex-1 flex flex-col items-center justify-end" title={`${formatDate(date)}: ${count} reviews`}>
+                                                    <div className="w-full bg-indigo-500 rounded-t-sm" style={{ height: `${Math.max(2, (count / (Math.max(...weeklyReviewData.map(d => d.count), 1))) * 100)}%` }}></div>
+                                                    <div className="text-xs text-slate-500 mt-1">{new Date(date).getDate()}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-slate-500 text-center mt-1">Reviews over last 6 weeks</p>
+                                    </div>
+                                </section>
+                                 <section>
+                                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-300 mb-3"><TagIcon className="w-5 h-5"/> Topics by Tag</h3>
+                                    <div className="p-4 rounded-lg bg-slate-900/50 space-y-3">
+                                        {tagDistributionData.length > 0 ? tagDistributionData.map(t => (
+                                            <div key={t.tag}>
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="font-semibold text-slate-300">{t.tag}</span>
+                                                    <span className="text-slate-400">{t.count} topic(s)</span>
+                                                </div>
+                                                <div className="w-full bg-slate-700 rounded-full h-2"><div className="bg-sky-500 h-2 rounded-full" style={{width: `${t.percentage}%`}}></div></div>
+                                            </div>
+                                        )) : <p className="text-slate-500 text-sm">Add tags to your topics to see distribution.</p>}
+                                    </div>
+                                </section>
+                                <section>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-300"><TrendingDownIcon className="w-5 h-5"/> Problem Topics</h3>
+                                        {stats.problemTopics.length > 0 && (
+                                            <button onClick={() => onStartProblemTopicsSession(stats.problemTopics)} className="flex items-center gap-2 text-sm bg-slate-700 text-slate-300 font-semibold py-1 px-3 rounded-md hover:bg-slate-600 transition-colors">
+                                                <PlayCircleIcon className="w-4 h-4"/>
+                                                Review ({stats.problemTopics.length})
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="p-4 rounded-lg bg-slate-900/50">
+                                        {stats.problemTopics.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {stats.problemTopics.map(item => (
+                                                    <li key={item.id} className="text-sm text-slate-300 flex justify-between">
+                                                        <span>{item.title}</span>
+                                                        <span className="font-semibold text-red-400">{item.hardReviews} hard review(s)</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : <p className="text-slate-500 text-sm">No topics seem to be giving you trouble. Keep it up!</p>}
+                                    </div>
+                                </section>
                             </div>
-                        </section>
-                        </>
+                        </div>
                     )}
                     {activeTab === 'calendar' && <Calendar items={items} />}
                     {activeTab === 'achievements' && (

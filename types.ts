@@ -30,3 +30,13 @@ export interface Achievement {
     description: string;
     icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }
+
+export interface Filters {
+  status?: 'any' | 'locked' | 'unlocked';
+  level?: {
+    comparison: 'eq' | 'gt' | 'lt';
+    value: number;
+  };
+  createdAfter?: string;
+  createdBefore?: string;
+}

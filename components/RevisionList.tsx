@@ -230,7 +230,7 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
     <>
       <div className="space-y-4 my-8">
         <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                  <input
                     type="search"
                     value={searchQuery}
@@ -238,7 +238,7 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
                     placeholder="Search by title or in notes..."
                     className="flex-grow bg-slate-900/80 border border-slate-600 rounded-md py-2 px-4 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"
                 />
-                 <button onClick={() => setShowFilters(!showFilters)} className={`relative flex items-center gap-2 font-semibold py-2 px-4 rounded-md transition-colors ${showFilters || isFilterActive ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
+                 <button onClick={() => setShowFilters(!showFilters)} className={`relative flex items-center justify-center sm:justify-start gap-2 font-semibold py-2 px-4 rounded-md transition-colors ${showFilters || isFilterActive ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
                     <FilterIcon className="w-5 h-5"/>
                     <span>Filter</span>
                     {isFilterActive && <span className="absolute -top-1 -right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-800"></span>}
@@ -283,21 +283,21 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
         </div>
         <TagFilter tags={uniqueTags} activeTag={activeTag} onSelectTag={onSelectTag} onStartCramSession={onStartCramSession}/>
 
-        <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-2 border border-slate-700 rounded-md p-1">
-                <button onClick={() => setActiveView('topics')} className={`flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors text-sm ${activeView === 'topics' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>
+        <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 border border-slate-700 rounded-md p-1 w-full sm:w-auto">
+                <button onClick={() => setActiveView('topics')} className={`flex flex-1 sm:flex-none items-center justify-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors text-sm ${activeView === 'topics' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>
                     <SitemapIcon className="w-5 h-5"/> Topics View
                 </button>
-                 <button onClick={() => setActiveView('review')} className={`flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors text-sm ${activeView === 'review' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>
+                 <button onClick={() => setActiveView('review')} className={`flex flex-1 sm:flex-none items-center justify-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors text-sm ${activeView === 'review' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>
                     <EyeIcon className="w-5 h-5"/> Review View
                 </button>
             </div>
-            <div className="flex items-center gap-2">
-                <button onClick={onStartReviewSession} disabled={dueItemsCount === 0} className="flex items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-500 disabled:bg-indigo-800/50 disabled:cursor-not-allowed transition-colors">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <button onClick={onStartReviewSession} disabled={dueItemsCount === 0} className="flex w-full sm:w-auto items-center justify-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-500 disabled:bg-indigo-800/50 disabled:cursor-not-allowed transition-colors">
                     <PlayCircleIcon className="w-5 h-5"/>
                     <span>Review Due ({dueItemsCount})</span>
                 </button>
-                <button onClick={onToggleSelectionMode} className={`flex items-center gap-2 font-semibold py-2 px-4 rounded-md transition-colors ${selectionMode ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
+                <button onClick={onToggleSelectionMode} className={`flex w-full sm:w-auto items-center justify-center gap-2 font-semibold py-2 px-4 rounded-md transition-colors ${selectionMode ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
                     <QueueListIcon className="w-5 h-5"/>
                     <span>{selectionMode ? 'Cancel' : 'Bulk Select'}</span>
                 </button>
@@ -306,12 +306,12 @@ const RevisionList: React.FC<RevisionListProps> = (props) => {
       </div>
 
       {selectionMode && numSelected > 0 && (
-          <div className="sticky bottom-4 z-10 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-lg flex items-center justify-between">
-              <span className="font-semibold">{numSelected} item(s) selected</span>
-              <div className="flex items-center gap-2">
-                  <button onClick={onBulkEdit} className="flex items-center gap-2 font-semibold py-2 px-4 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"><PencilSquareIcon className="w-5 h-5"/> Bulk Edit</button>
-                  <button onClick={onBulkArchive} className="font-semibold py-2 px-4 rounded-md bg-slate-600 hover:bg-slate-500 transition-colors">Archive</button>
-                  <button onClick={onBulkDelete} className="font-semibold py-2 px-4 rounded-md bg-red-800 hover:bg-red-700 text-white transition-colors">Delete</button>
+          <div className="sticky bottom-4 z-10 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="font-semibold mb-2 sm:mb-0">{numSelected} item(s) selected</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button onClick={onBulkEdit} className="flex flex-1 sm:flex-none items-center justify-center gap-2 font-semibold py-2 px-4 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"><PencilSquareIcon className="w-5 h-5"/> Bulk Edit</button>
+                  <button onClick={onBulkArchive} className="flex-1 sm:flex-none justify-center font-semibold py-2 px-4 rounded-md bg-slate-600 hover:bg-slate-500 transition-colors">Archive</button>
+                  <button onClick={onBulkDelete} className="flex-1 sm:flex-none justify-center font-semibold py-2 px-4 rounded-md bg-red-800 hover:bg-red-700 text-white transition-colors">Delete</button>
               </div>
           </div>
       )}
